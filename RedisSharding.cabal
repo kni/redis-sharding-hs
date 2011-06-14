@@ -1,0 +1,18 @@
+Name:          RedisSharding
+Version:       0.5
+Author:        Nick Kostitya
+Build-type:    Simple
+Cabal-version: >=1.2
+Tested-with:   GHC==7.0.3
+
+Library
+  build-depends:
+    base       >= 4.3,
+    bytestring >= 0.9,
+    unix       >= 2.4,
+    network    >= 2.3,
+    digest
+
+Executable     redis_sharding
+  main-is:     redis_sharding.hs
+  build-tools: ghc >= 7.0.3
