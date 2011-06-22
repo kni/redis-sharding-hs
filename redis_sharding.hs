@@ -9,7 +9,6 @@ import Control.Exception (catch, throw, SomeException, IOException, AsyncExcepti
 import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack, split)
 import Data.Maybe (maybe, fromJust)
 import Data.Tuple (fst, snd)
-import System.Posix.Types
 import System.Posix.Signals
 import System.Environment (getArgs, getProgName)
 import System.Console.GetOpt
@@ -37,9 +36,6 @@ options = [
 	Option [] ["nodes"] (ReqArg (pair "nodes") "nodes") "nodes (host1:port1,host2:port2)"
 	]
 
-
-sock2fd :: Socket -> Fd
-sock2fd sock = Fd (fdSocket sock)
 
 
 main = withSocketsDo $ do
@@ -71,13 +67,12 @@ main = withSocketsDo $ do
 	bindSocket sock (SockAddrInet port host)
 	listen sock 20
 
-	let accepter = threadWaitRead (sock2fd sock) >> forkIO (welcome sock servers) >> accepter
+	let accepter = accept sock >>= \(c_sock, _) -> forkIO (welcome c_sock servers) >> accepter
 
 	accepter
 
 
-welcome sock servers = withForkManagerDo $ \fm -> do
-	(c_sock, _) <- accept sock
+welcome c_sock servers = withForkManagerDo $ \fm -> do
 	setSocketOption c_sock KeepAlive 1
 
 	addr2sMV <- newMVar [] -- Список пар "server address" => "server socket"
