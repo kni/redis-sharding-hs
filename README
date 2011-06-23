@@ -1,7 +1,7 @@
 Redis Sharding
 **************
 
-http://github.com/kni/redis-sharding
+http://github.com/kni/redis-sharding-hs
 
 Haskell version of "Redis Sharding" (http://github.com/kni/redis-sharding)
 
