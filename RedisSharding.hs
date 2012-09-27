@@ -22,7 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSL
 
 warn = BS.hPutStrLn stderr . BS.concat . BSL.toChunks
 
-showInt :: Integral a => a -> ByteString
+showInt :: Int64 -> ByteString
 showInt a = BSL.pack $ show a
 
 
@@ -132,7 +132,7 @@ beforeCRLF s = do
 cmd2stream :: Maybe [Maybe ByteString] -> ByteString
 cmd2stream  Nothing  = "*-1\r\n"
 cmd2stream (Just []) = "*0\r\n"
-cmd2stream (Just as) = BSL.concat ["*", (showInt $ length as), "\r\n", BSL.concat (map arg2stream as)]
+cmd2stream (Just as) = BSL.concat ["*", (showInt $ fromIntegral $ length as), "\r\n", BSL.concat (map arg2stream as)]
 
 
 -- Преобразование аргумента в строку, поток байтов, соответствующий протоколу redis.

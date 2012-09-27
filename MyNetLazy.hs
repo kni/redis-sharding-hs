@@ -20,6 +20,6 @@ getContentsWith :: Socket             -- ^ Connected socket
 getContentsWith sock quit = loop where
 	loop = unsafeInterleaveIO $ do
 		s <- N.recv sock defaultChunkSize
-		if S.null s
-		then quit sock >> return Empty
-		else Chunk s `liftM` loop
+		case S.null s of
+			True  -> quit sock >> return Empty
+			False -> Chunk s `liftM` loop
