@@ -6,3 +6,8 @@ http://github.com/kni/redis-sharding-hs
 Haskell version of "Redis Sharding" (http://github.com/kni/redis-sharding)
 
 For resharding see http://github.com/kni/redis-sharding.
+
+
+As opposed to the Perl version, the Haskell version RedisSharding is built in the "lazy style".
+If the client is not responding, RedisSharding won't detect closing connection by the server because of time-out.
+So, the time-outs execution is added into the RedisSharding itself (timeout keys, seconds).
