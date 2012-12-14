@@ -120,7 +120,7 @@ servers_reader c_send sss get_cmd fquit = servers_loop sss
 	where
 	servers_loop sss = server_responses get_cmd sss c_send fquit >>= servers_loop
 
-				
+
 server_responses get_cmd sss c_send fquit = do
 	(cmd, ss) <- get_cmd
 	(sss, rs) <- read_responses cmd ss sss
@@ -168,16 +168,17 @@ server_responses get_cmd sss c_send fquit = do
 
 				RMultiSize fmrs | length rs == 1 && fmrs == -1 -> c_send "*-1\r\n" >> return sss
 				RMultiSize fmrs -> do
-							c_send (BSL.concat ["*", showInt sm, "\r\n"])
 							case sm > 0 of
-								False -> return sss
+								False -> c_send resp >> return sss
 								True  -> case length ss of
-									0         -> read_loop sss $ spiral rs -- Со всех нод все
-									1         -> read_loop sss $ spiral rs -- С одной ноды все
-									otherwise -> read_loop sss ss          -- С каждого упоминание нод по одному
+									0         -> read_loop resp sss $ spiral rs -- Со всех нод все
+									1         -> read_loop resp sss $ spiral rs -- С одной ноды все
+									otherwise -> read_loop resp sss ss          -- С каждого упоминание нод по одному
 
 							where
 								sm = sum $ map (\(RMultiSize r) -> r) (map snd rs)
+
+								resp = (BSL.concat ["*", showInt sm, "\r\n"])
 
 								-- Спираль, по одному с каждого и так до конца (челнок). Не удаляй ленивость.
 								-- print $ take 5 $ spiral [ ("a", 3), ("b", 4), ("c", 2), ("d", 0) ]
@@ -189,17 +190,24 @@ server_responses get_cmd sss c_send fquit = do
 											| v == 0    =     go t new
 											| otherwise = k : go t ((k, RMultiSize(v-1)):new)
 
-								read_loop sss []     = return sss
-								read_loop sss (h:t)  = do
-									new_sss <- mapM read_one sss
-									read_loop new_sss t
+								read_loop resp sss ss = go sss [] ss [resp] (BSL.length resp)
 									where
-										read_one (s_addr, s_sock, s)
+										go sss                           []       []   resp resp_l = c_send (BSL.concat resp) >> return sss
+										go []                            new_sss (h:t) resp resp_l = go new_sss [] t resp resp_l
+										go ((s_addr, s_sock, s):old_sss) new_sss (h:t) resp resp_l
 											| s_addr == h = case server_parser_multi s of
 												Just (s, RBulk r) ->
-													c_send (arg2stream r) >>
-													return (s_addr, s_sock, s)
+													case new_resp_l > 1024 of
+														True  -> c_send (BSL.concat new_resp) >>
+															go old_sss ((s_addr, s_sock, s):new_sss) (h:t) [] 0
+														False ->
+															go old_sss ((s_addr, s_sock, s):new_sss) (h:t) new_resp new_resp_l
+													where
+														arg        = arg2stream r
+														new_resp   = resp L.++ [arg]
+														new_resp_l = resp_l + BSL.length arg
 												Nothing ->
 													warn (BSL.concat ["Parsing error server response (", lcmd, ")"]) >> fquit >>
-													return (s_addr, s_sock, s)
-											| otherwise   = return (s_addr, s_sock, s)
+													go old_sss ((s_addr, s_sock, s):new_sss) (h:t) resp resp_l
+											| otherwise   =
+													go old_sss ((s_addr, s_sock, s):new_sss) (h:t) resp resp_l
