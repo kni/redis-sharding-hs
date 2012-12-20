@@ -61,7 +61,7 @@ main = withSocketsDo $ do
 	let timeout = (maybe 300 (\a -> fromIntegral $ read a) (get_opt "timeout"))::Int
 
 	sock <- socket AF_INET Stream defaultProtocol
-	setSocketOption sock ReuseAddr 1 -- ToDo потом убрать
+	setSocketOption sock ReuseAddr 1
 	setSocketOption sock KeepAlive 1
 	bindSocket sock (SockAddrInet port host)
 	listen sock 20
@@ -73,6 +73,7 @@ main = withSocketsDo $ do
 
 welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 	setSocketOption c_sock KeepAlive 1
+	setSocketOption c_sock NoDelay   1
 
 	addr2sMV <- newMVar [] -- Список пар "server address" => "server socket"
 
@@ -114,6 +115,7 @@ welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 			ia     <- inet_addr (unpack host)
 			connect s_sock (SockAddrInet port_number ia)
 			setSocketOption s_sock KeepAlive 1
+			setSocketOption s_sock NoDelay   1
 
 			modifyMVar_ addr2sMV (return . (++) [(addr,s_sock)])
 
