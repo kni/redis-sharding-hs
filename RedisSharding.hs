@@ -30,6 +30,7 @@ key2server key servers = servers !! i
 	where
 		i = fromIntegral $ (toInteger $ crc32 $ key_tag key) `rem` (toInteger $ length servers)
 
+		key_tag ""  = ""
 		key_tag key =
 			case BSL.last key == '}' && clams /= [] of
 				True  -> BSL.drop (1 + last clams) $ BSL.take (BSL.length key - 1) key
