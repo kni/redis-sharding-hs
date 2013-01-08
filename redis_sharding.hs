@@ -64,7 +64,7 @@ main = withSocketsDo $ do
 	setSocketOption sock ReuseAddr 1
 	setSocketOption sock KeepAlive 1
 	bindSocket sock (SockAddrInet port host)
-	listen sock 20
+	listen sock 200
 
 	let accepter = accept sock >>= \(c_sock, _) -> forkIO (welcome c_sock servers timeout) >> accepter
 
