@@ -1,11 +1,11 @@
 Name:          RedisSharding
-Version:       0.7
+Version:       0.8
 Author:        Nick Kostitya
 License:       BSD3
 license-file:  LICENSE
 Build-type:    Simple
 Cabal-version: >=1.2
-Tested-with:   GHC==7.0.3, GHC==7.4.1
+Tested-with:   GHC==7.0.3, GHC==7.4.1, GHC==7.6.1
 
 Library
   build-depends:

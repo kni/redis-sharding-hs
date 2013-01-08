@@ -2,11 +2,11 @@
 
 module Main (main) where
 
-import Prelude hiding (catch, getContents)
+import Prelude hiding (catch, getContents, concat)
 import Control.Concurrent
 import Control.Monad (mapM_, forM, forM_)
 import Control.Exception (catch, throw, SomeException, IOException, AsyncException (ThreadKilled))
-import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack, split)
+import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack, split, concat)
 import Data.Maybe (maybe, fromJust)
 import Data.Time.Clock
 import Data.Tuple (fst, snd)
@@ -95,7 +95,7 @@ welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 	let set_cmd c = writeChan cmds c
 	let get_cmd   = getCurrentTime >>= putMVar waitMVar >> readChan cmds >>= \cmd -> takeMVar waitMVar >> return cmd
 
-	let c_send s = sendAll c_sock s
+	let c_send s = sendAll c_sock $ concat s
 
 	forkWithQuit fm fquit (_servers_reader c_sock c_send servers addr2s get_cmd fquit)
 	forkWithQuit fm fquit (_client_reader  c_sock c_send servers addr2s set_cmd fquit)
@@ -144,7 +144,7 @@ welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 				getContents :: IO ByteString
 				getContents = getContentsWith c_sock (\_ -> fquit)
 
-				s_send s_addr s = sendAll (fromJust $ lookup s_addr addr2s) s
+				s_send s_addr s = sendAll (fromJust $ lookup s_addr addr2s) $ concat s
 
 
 		_servers_reader c_sock c_send servers addr2s get_cmd fquit = do

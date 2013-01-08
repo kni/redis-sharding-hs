@@ -120,13 +120,12 @@ beforeCRLF s = do
 
 
 -- Преобразование команды (список аргументов) в строку, поток байтов, соответствующий протоколу redis.
-cmd2stream :: Maybe [Maybe ByteString] -> ByteString
-cmd2stream  Nothing  = "*-1\r\n"
-cmd2stream (Just []) = "*0\r\n"
-cmd2stream (Just as) = BSL.concat ["*", (showInt $ fromIntegral $ length as), "\r\n", BSL.concat (map arg2stream as)]
+cmd2stream :: [Maybe ByteString] -> [ByteString]
+cmd2stream [] = ["*0\r\n"]
+cmd2stream as = ["*", (showInt $ fromIntegral $ length as), "\r\n"] ++ concat (map arg2stream as)
 
 
 -- Преобразование аргумента в строку, поток байтов, соответствующий протоколу redis.
-arg2stream :: Maybe ByteString -> ByteString
-arg2stream Nothing  = "$-1\r\n"
-arg2stream (Just s) = BSL.concat ["$", (showInt $ BSL.length s), "\r\n", s, "\r\n"]
+arg2stream :: Maybe ByteString -> [ByteString]
+arg2stream Nothing  = ["$-1\r\n"]
+arg2stream (Just s) = ["$", (showInt $ fromIntegral $ BSL.length s), "\r\n", s, "\r\n"]

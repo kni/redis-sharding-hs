@@ -17,10 +17,10 @@ import qualified Data.ByteString.Char8 as BS
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BSL
 
-import RedisParser;
+import RedisParser
 
 
-warn = BS.hPutStrLn stderr . BS.concat . BSL.toChunks
+warn = BS.hPutStrLn stderr . BS.concat . BSL.toChunks . BSL.concat
 
 showInt :: Int64 -> ByteString
 showInt a = BSL.pack $ show a
@@ -55,8 +55,7 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 		client_loop :: ByteString -> IO ()
 		client_loop s = do
 			s <- case multi_bulk_parser s of
-				Just (s, as) -> do
-					let Just ((Just cmd):args) = as
+				Just (s, Just as@((Just cmd):args)) -> do
 					let c = BS.concat $ BSL.toChunks cmd
 					case lookup c cmd_type of
 						Just 1 -> do -- На все сервера
@@ -76,7 +75,7 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 							set_cmd (c, s_addrs)
 							mapM_ (\s_addr -> do
 									let _args = map fst $ filter ( \(arg, _s_addr) -> _s_addr == s_addr ) arg_and_s_addr
-									let cs = cmd2stream (Just (concat [[Just cmd],_args]))
+									let cs = cmd2stream $ concat [[Just cmd],_args]
 									s_send s_addr cs
 								) uniq_s_addrs
 						Just 4 -> do -- На множество серверов. CMD key1 value1 key2 value2 ... keyN valueN
@@ -87,7 +86,7 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 							mapM_ (\s_addr -> do
 									let _args = concat $ map (\((k,v),_)-> [k,v]) $
 										filter ( \(arg, _s_addr) -> _s_addr == s_addr ) arg_and_s_addr
-									let cs = cmd2stream (Just (concat [[Just cmd],_args]))
+									let cs = cmd2stream $ concat [[Just cmd],_args]
 									s_send s_addr cs
 								) uniq_s_addrs
 							where
@@ -99,19 +98,19 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 							let s_addrs = map snd arg_and_s_addr
 							let uniq_s_addrs = L.nub s_addrs
 							case length uniq_s_addrs == 1 of
-								False -> c_send $ BSL.concat ["-ERR Keys of the '", cmd, "' command should be on one node; use key tags\r\n"]
+								False -> c_send ["-ERR Keys of the '", cmd, "' command should be on one node; use key tags\r\n"]
 								True  -> do
 									set_cmd (c, s_addrs)
 									mapM_ (\s_addr -> do
 											let _args = map fst $ filter ( \(arg, _s_addr) -> _s_addr == s_addr ) arg_and_s_addr
-											let cs = cmd2stream (Just (concat [[Just cmd],_args,[timeout]]))
+											let cs = cmd2stream $ concat [[Just cmd],_args,[timeout]]
 											s_send s_addr cs
 										) uniq_s_addrs
 						Nothing -> do
-							c_send $ BSL.concat ["-ERR unsupported command '", cmd, "'\r\n"]
+							c_send ["-ERR unsupported command '", cmd, "'\r\n"]
 					return s
 				Nothing      -> do
-					c_send "-ERR unified protocol error\r\n"
+					c_send ["-ERR unified protocol error\r\n"]
 					getContents
 			client_loop s
 
@@ -136,7 +135,7 @@ server_responses get_cmd sss c_send fquit = do
 							case server_parser s of
 								Just (s, r) ->
 									_read_loop old_sss ((s_addr, s_sock, s ):new_sss) ((s_addr,r):rs)
-								Nothing     -> warn (BSL.concat ["Parsing error server response (", lcmd, ")"]) >> fquit >>
+								Nothing     -> warn ["Parsing error server response (", lcmd, ")"] >> fquit >>
 									_read_loop old_sss ((s_addr, s_sock, ""):new_sss) rs
 									where lcmd = BSL.fromChunks [cmd]
 						False ->    _read_loop old_sss ((s_addr, s_sock, s ):new_sss) rs
@@ -148,26 +147,26 @@ server_responses get_cmd sss c_send fquit = do
 				RInt fr -> do
 					-- Числовой ответ складываем.
 					let sm = sum $ map (\(RInt r) -> r) (map snd rs)
-					c_send (BSL.concat [":", showInt sm, "\r\n"])
+					c_send [":", showInt sm, "\r\n"]
 					return sss
 
 				RInline fr -> do
 					case any (== fr) $ map ( \(RInline r) -> r) (map snd rs) of
-						True  -> c_send (BSL.concat [fr, "\r\n"])                 -- Ответы идентичны.
-						False -> c_send "-ERR nodes return different results\r\n" -- Ответы отличаются.
+						True  -> c_send [fr, "\r\n"] -- Ответы идентичны.
+						False -> c_send ["-ERR nodes return different results\r\n"] -- Ответы отличаются.
 					return sss
 
 				RBulk fmr -> do
 					-- Кажется все эти команды должны быть с одного сервера.
 					let (Just ctype) = lookup cmd cmd_type
 					case ctype == 2 of
-						False -> warn $ BSL.concat ["bulk cmd ", lcmd, " with ", showInt ctype, " != 2"]
+						False -> warn ["bulk cmd ", lcmd, " with ", showInt ctype, " != 2"]
 						True  -> case length rs == 1 of
-							False -> warn "logic error"
-							True  -> c_send (arg2stream fmr)
+							False -> warn ["logic error"]
+							True  -> c_send $ arg2stream fmr
 					return sss
 
-				RMultiSize fmrs | length rs == 1 && fmrs == -1 -> c_send "*-1\r\n" >> return sss
+				RMultiSize fmrs | length rs == 1 && fmrs == -1 -> c_send ["*-1\r\n"] >> return sss
 				RMultiSize fmrs -> do
 							case sm > 0 of
 								False -> c_send resp >> return sss
@@ -179,7 +178,7 @@ server_responses get_cmd sss c_send fquit = do
 							where
 								sm = sum $ map (\(RMultiSize r) -> r) (map snd rs)
 
-								resp = (BSL.concat ["*", showInt sm, "\r\n"])
+								resp = ["*", showInt sm, "\r\n"]
 
 								-- Спираль, по одному с каждого и так до конца (челнок). Не удаляй ленивость.
 								-- print $ take 5 $ spiral [ ("a", 3), ("b", 4), ("c", 2), ("d", 0) ]
@@ -191,24 +190,24 @@ server_responses get_cmd sss c_send fquit = do
 											| v == 0    =     go t new
 											| otherwise = k : go t ((k, RMultiSize(v-1)):new)
 
-								read_loop resp sss ss = go sss [] ss [resp] (BSL.length resp)
+								read_loop resp sss ss = go sss [] ss resp (sum $ map BSL.length resp)
 									where
-										go sss                           []       []   resp resp_l = c_send (BSL.concat resp) >> return sss
+										go sss                           []       []   resp resp_l = c_send resp >> return sss
 										go []                            new_sss (h:t) resp resp_l = go new_sss [] t resp resp_l
 										go ((s_addr, s_sock, s):old_sss) new_sss (h:t) resp resp_l
 											| s_addr == h = case server_parser_multi s of
 												Just (s, RBulk r) ->
 													case new_resp_l > 1024 of
-														True  -> c_send (BSL.concat new_resp) >>
+														True  -> c_send new_resp >>
 															go old_sss ((s_addr, s_sock, s):new_sss) (h:t) [] 0
 														False ->
 															go old_sss ((s_addr, s_sock, s):new_sss) (h:t) new_resp new_resp_l
 													where
 														arg        = arg2stream r
-														new_resp   = resp L.++ [arg]
-														new_resp_l = resp_l + BSL.length arg
+														new_resp   = resp L.++ arg
+														new_resp_l = resp_l + (sum $ map BSL.length arg)
 												Nothing ->
-													warn (BSL.concat ["Parsing error server response (", lcmd, ")"]) >> fquit >>
+													warn ["Parsing error server response (", lcmd, ")"] >> fquit >>
 													go old_sss ((s_addr, s_sock, s):new_sss) (h:t) resp resp_l
 											| otherwise   =
 													go old_sss ((s_addr, s_sock, s):new_sss) (h:t) resp resp_l
