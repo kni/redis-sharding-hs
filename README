@@ -9,6 +9,9 @@ For resharding see http://github.com/kni/redis-sharding.
 
 Redis Sharding with fully support MSET, MSETNX, MGET, DEL commands.
 
+This Lazy version. Strict version of Redis Sharding available also: http://github.com/kni/redis-sharding-hs-strict.
+Strict version usually faster by 20%.
+
 
 NOTA BENE
 ---------
@@ -22,6 +25,8 @@ BUILD
 -----
 
 	ghc -threaded -rtsopts -O2 --make redis_sharding.hs
+	or
+	cabal configure && cabal build
 
 RUN
 -----
@@ -39,7 +44,10 @@ Others parameters:
 	--host=10.1.1.1
 	--port=6379
 	--timeout=300 (0 - disable timeout)
+
+Tuning:
 	
+	./redis_sharding --nodes=10.1.1.1:6380,10.1.1.1:6381,... +RTS -N -A10M -qa
 
 NOTES
 -----
