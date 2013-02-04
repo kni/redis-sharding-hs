@@ -6,6 +6,7 @@ module RedisSharding (
 
 
 import Control.Monad (forM_)
+import Data.Char (toUpper)
 import Data.Int (Int64)
 import Data.Digest.CRC32 (crc32)
 import Data.Maybe (fromJust)
@@ -56,7 +57,7 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 		client_loop s = do
 			s <- case multi_bulk_parser s of
 				Just (s, Just as@((Just cmd):args)) -> do
-					let c = BS.concat $ BSL.toChunks cmd
+					let c = BS.pack $ map toUpper (BS.unpack $ BS.concat $ BSL.toChunks cmd)
 					case lookup c cmd_type of
 						Just 1 -> do -- На все сервера
 							set_cmd (c, [])
