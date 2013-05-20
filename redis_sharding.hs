@@ -17,7 +17,7 @@ import System.Exit
 import Network.Socket hiding (recv)
 
 import MyForkManager
-import MyNetLazy -- На основе Network.Socket.ByteString.Lazy
+import MyNetLazy -- п²п╟ п╬я│п╫п╬п╡п╣ Network.Socket.ByteString.Lazy
 
 import RedisSharding
 
@@ -74,12 +74,12 @@ main = withSocketsDo $ do
 welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 	setSocketOption c_sock KeepAlive 1
 
-	addr2sMV <- newMVar [] -- Список пар "server address" => "server socket"
+	addr2sMV <- newMVar [] -- п║п©п╦я│п╬п╨ п©п╟я─ "server address" => "server socket"
 
 	catch (forM_ servers (server c_sock addr2sMV))
 		(\e -> print (e::SomeException) >> clean_from_client c_sock addr2sMV)
 
-	-- Получили список пар "server address" => "server socket" после заполнения, дальше он изментся не будет.
+	-- п÷п╬п╩я┐я┤п╦п╩п╦ я│п©п╦я│п╬п╨ п©п╟я─ "server address" => "server socket" п©п╬я│п╩п╣ п╥п╟п©п╬п╩п╫п╣п╫п╦я▐, п╢п╟п╩я▄я┬п╣ п╬п╫ п╦п╥п╪п╣п╫я┌я│я▐ п╫п╣ п╠я┐п╢п╣я┌.
 	addr2s <- readMVar addr2sMV
 
 	quit <- newEmptyMVar
@@ -90,7 +90,7 @@ welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 		True  -> forkWithQuit fm fquit (timer waitMVar timeout fquit) >> return ()
 		False -> return ()
 
-	cmds <- newChan      -- Канал для команд
+	cmds <- newChan      -- п п╟п╫п╟п╩ п╢п╩я▐ п╨п╬п╪п╟п╫п╢
 	let set_cmd c = writeChan cmds c
 	let get_cmd   = getCurrentTime >>= putMVar waitMVar >> readChan cmds >>= \cmd -> takeMVar waitMVar >> return cmd
 
@@ -108,7 +108,7 @@ welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 			takeMVar addr2sMV >>= return . map snd >>= mapM_ sClose
 			sClose c_sock
 
-		-- Соединение с сервером
+		-- п║п╬п╣п╢п╦п╫п╣п╫п╦п╣ я│ я│п╣я─п╡п╣я─п╬п╪
 		server c_sock addr2sMV addr = do
 			s_sock <- socket AF_INET Stream defaultProtocol
 			ia     <- inet_addr (unpack host)

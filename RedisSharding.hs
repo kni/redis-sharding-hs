@@ -59,17 +59,17 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 				Just (s, Just as@((Just cmd):args)) -> do
 					let c = BS.pack $ map toUpper (BS.unpack $ BS.concat $ BSL.toChunks cmd)
 					case lookup c cmd_type of
-						Just 1 -> do -- На все сервера
+						Just 1 -> do -- п²п╟ п╡я│п╣ я│п╣я─п╡п╣я─п╟
 							set_cmd (c, [])
 							let cs = cmd2stream as
 							forM_ servers (\s_addr -> s_send s_addr cs)
-						Just 2 -> do -- На конкретные сервер
+						Just 2 -> do -- п²п╟ п╨п╬п╫п╨я─п╣я┌п╫я▀п╣ я│п╣я─п╡п╣я─
 							let (Just key):_ = args
 							let s_addr = key2server key servers
 							set_cmd (c, [s_addr])
 							let cs = cmd2stream as
 							s_send s_addr cs
-						Just 3 -> do -- На множество серверов. CMD key1 key2 ... keyN
+						Just 3 -> do -- п²п╟ п╪п╫п╬п╤п╣я│я┌п╡п╬ я│п╣я─п╡п╣я─п╬п╡. CMD key1 key2 ... keyN
 							let arg_and_s_addr = map (\arg -> (arg, key2server (fromJust arg) servers)) args
 							let s_addrs = map snd arg_and_s_addr
 							let uniq_s_addrs = L.nub s_addrs
@@ -79,7 +79,7 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 									let cs = cmd2stream $ concat [[Just cmd],_args]
 									s_send s_addr cs
 								) uniq_s_addrs
-						Just 4 -> do -- На множество серверов. CMD key1 value1 key2 value2 ... keyN valueN
+						Just 4 -> do -- п²п╟ п╪п╫п╬п╤п╣я│я┌п╡п╬ я│п╣я─п╡п╣я─п╬п╡. CMD key1 value1 key2 value2 ... keyN valueN
 							let arg_and_s_addr = map (\(k, v) -> ((k, v), key2server (fromJust k) servers)) $ to_pair args
 							let s_addrs = map snd arg_and_s_addr
 							let uniq_s_addrs = L.nub s_addrs
@@ -93,7 +93,7 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 							where
 								to_pair []      = []
 								to_pair (a:b:l) = (a,b):to_pair l
-						Just 5 -> do -- На множество серверов. CMD key1 key2 ... keyN timeout (блокирующие команды)
+						Just 5 -> do -- п²п╟ п╪п╫п╬п╤п╣я│я┌п╡п╬ я│п╣я─п╡п╣я─п╬п╡. CMD key1 key2 ... keyN timeout (п╠п╩п╬п╨п╦я─я┐я▌я┴п╦п╣ п╨п╬п╪п╟п╫п╢я▀)
 							let timeout = last args
 							let arg_and_s_addr = map (\arg -> (arg, key2server (fromJust arg) servers)) $ init args
 							let s_addrs = map snd arg_and_s_addr
@@ -146,19 +146,19 @@ server_responses get_cmd sss c_send fquit = do
 			let ((_,fr):_) = rs
 			case fr of
 				RInt fr -> do
-					-- Числовой ответ складываем.
+					-- п╖п╦я│п╩п╬п╡п╬п╧ п╬я┌п╡п╣я┌ я│п╨п╩п╟п╢я▀п╡п╟п╣п╪.
 					let sm = sum $ map (\(RInt r) -> r) (map snd rs)
 					c_send [":", showInt sm, "\r\n"]
 					return sss
 
 				RInline fr -> do
 					case any (== fr) $ map ( \(RInline r) -> r) (map snd rs) of
-						True  -> c_send [fr, "\r\n"] -- Ответы идентичны.
-						False -> c_send ["-ERR nodes return different results\r\n"] -- Ответы отличаются.
+						True  -> c_send [fr, "\r\n"] -- п·я┌п╡п╣я┌я▀ п╦п╢п╣п╫я┌п╦я┤п╫я▀.
+						False -> c_send ["-ERR nodes return different results\r\n"] -- п·я┌п╡п╣я┌я▀ п╬я┌п╩п╦я┤п╟я▌я┌я│я▐.
 					return sss
 
 				RBulk fmr -> do
-					-- Кажется все эти команды должны быть с одного сервера.
+					-- п п╟п╤п╣я┌я│я▐ п╡я│п╣ я█я┌п╦ п╨п╬п╪п╟п╫п╢я▀ п╢п╬п╩п╤п╫я▀ п╠я▀я┌я▄ я│ п╬п╢п╫п╬пЁп╬ я│п╣я─п╡п╣я─п╟.
 					let (Just ctype) = lookup cmd cmd_type
 					case ctype == 2 of
 						False -> warn ["bulk cmd ", lcmd, " with ", showInt ctype, " != 2"]
@@ -172,16 +172,16 @@ server_responses get_cmd sss c_send fquit = do
 							case sm > 0 of
 								False -> c_send resp >> return sss
 								True  -> case length ss of
-									0         -> read_loop resp sss $ spiral rs -- Со всех нод все
-									1         -> read_loop resp sss $ spiral rs -- С одной ноды все
-									otherwise -> read_loop resp sss ss          -- С каждого упоминание нод по одному
+									0         -> read_loop resp sss $ spiral rs -- п║п╬ п╡я│п╣я┘ п╫п╬п╢ п╡я│п╣
+									1         -> read_loop resp sss $ spiral rs -- п║ п╬п╢п╫п╬п╧ п╫п╬п╢я▀ п╡я│п╣
+									otherwise -> read_loop resp sss ss          -- п║ п╨п╟п╤п╢п╬пЁп╬ я┐п©п╬п╪п╦п╫п╟п╫п╦п╣ п╫п╬п╢ п©п╬ п╬п╢п╫п╬п╪я┐
 
 							where
 								sm = sum $ map (\(RMultiSize r) -> r) (map snd rs)
 
 								resp = ["*", showInt sm, "\r\n"]
 
-								-- Спираль, по одному с каждого и так до конца (челнок). Не удаляй ленивость.
+								-- п║п©п╦я─п╟п╩я▄, п©п╬ п╬п╢п╫п╬п╪я┐ я│ п╨п╟п╤п╢п╬пЁп╬ п╦ я┌п╟п╨ п╢п╬ п╨п╬п╫я├п╟ (я┤п╣п╩п╫п╬п╨). п²п╣ я┐п╢п╟п╩я▐п╧ п╩п╣п╫п╦п╡п╬я│я┌я▄.
 								-- print $ take 5 $ spiral [ ("a", 3), ("b", 4), ("c", 2), ("d", 0) ]
 								spiral a = go a []
 									where

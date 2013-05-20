@@ -13,7 +13,7 @@ withForkManagerDo io =
 		(waitForChildren)
 		io
 	where
-		-- ïÖÉÄÁÎÉÅ ÚÁ×ÅÒÖÅÎÉÑ ×ÓÅÈ ÐÏÔÏÍËÉ×
+		-- ÐžÐ¶Ð¸Ð´Ð°Ð½Ð¸Ðµ Ð·Ð°Ð²ÐµÑ€Ð¶ÐµÐ½Ð¸Ñ Ð²ÑÐµÑ… Ð¿Ð¾Ñ‚Ð¾Ð¼ÐºÐ¸Ð²
 		waitForChildren :: ForkManager -> IO ()
 		waitForChildren (FM fm) = mapM_ (takeMVar . snd) =<< takeMVar fm
 
