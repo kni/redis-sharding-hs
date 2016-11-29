@@ -19,4 +19,4 @@ Library
 Executable     redis_sharding
   main-is:     redis_sharding.hs
   build-tools: ghc >= 7.0.3
-  ghc-options: -threaded -rtsopts -O2
+  ghc-options: -threaded -rtsopts -O2 -fno-warn-tabs
