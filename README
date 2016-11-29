@@ -14,7 +14,7 @@ Strict version of Redis Sharding available also: http://github.com/kni/redis-sha
 ATTENTION. Strict version faster in 4 time for Pipeline mode!
 
 
-NOTA BENE
+Nota bene
 ---------
 
 To achieve the best efficiency while sharding data it is especially important to use pipelining by the client.
@@ -22,14 +22,14 @@ The importance increases according to the number of node for multikeys commands 
 And it increases twice only in comparison with the usual redis server. :-)
 
 
-BUILD
+Build
 -----
 
 	ghc -threaded -rtsopts -O2 --make redis_sharding.hs
 	or
 	cabal configure && cabal build
 
-RUN
+Run
 -----
 
 	./redis_sharding --nodes=10.1.1.1:6380,10.1.1.1:6381,...
@@ -46,11 +46,21 @@ Others parameters:
 	--port=6379
 	--timeout=300 (0 - disable timeout)
 
-Tuning:
+Tuning
+------
 	
 	./redis_sharding --nodes=10.1.1.1:6380,10.1.1.1:6381,... +RTS -N -A10M -qa
 
-NOTES
+Bug
+-----
+
+Do not use too long keys (and values) or the excessive number of keys in one command (>100Kb).
+GHC threaded runtime contains an error that causes data loss of a socket status that it's ready for write.
+Not-threaded runtime does not have the above mentioned bug but it is slower and uses the system select call instead of using kevent or epoll.
+Tests showed that this error is present in GHC 7.8.[34] and 8.0.1.
+
+
+Notes
 -----
 
 timeout
