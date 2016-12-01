@@ -13,6 +13,8 @@ This Lazy version.
 Strict version of Redis Sharding available also: http://github.com/kni/redis-sharding-hs-strict.
 ATTENTION. Strict version faster in 4 time for Pipeline mode!
 
+Standard ML version (https://github.com/kni/redis-sharding-sml) is even more productive.
+
 
 Nota bene
 ---------
