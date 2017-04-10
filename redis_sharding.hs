@@ -10,6 +10,7 @@ import Data.ByteString.Lazy.Char8 (ByteString, pack, unpack, split, concat)
 import Data.Maybe (maybe, fromJust)
 import Data.Time.Clock
 import Data.Tuple (fst, snd)
+import System.IO
 import System.Posix.Signals
 import System.Environment (getArgs, getProgName)
 import System.Console.GetOpt
@@ -21,6 +22,8 @@ import MyNetLazy -- На основе Network.Socket.ByteString.Lazy
 
 import RedisSharding
 
+
+version = "0.9"
 
 
 options :: [OptDescr (String, String)]
@@ -38,6 +41,10 @@ options = [
 
 main = withSocketsDo $ do
 	installHandler sigPIPE Ignore Nothing
+
+	hSetBuffering stdout LineBuffering
+
+	printLog ["Start RedisSharding, (version - ", version, ")."]
 
 	argv <- getArgs
 
@@ -62,7 +69,6 @@ main = withSocketsDo $ do
 
 	sock <- socket AF_INET Stream defaultProtocol
 	setSocketOption sock ReuseAddr 1
-	setSocketOption sock KeepAlive 1
 	bindSocket sock (SockAddrInet port host)
 	listen sock 200
 
@@ -77,7 +83,7 @@ welcome c_sock servers timeout = withForkManagerDo $ \fm -> do
 	addr2sMV <- newMVar [] -- Список пар "server address" => "server socket"
 
 	catch (forM_ servers (server c_sock addr2sMV))
-		(\e -> print (e::SomeException) >> clean_from_client c_sock addr2sMV)
+		(\e -> printLog [ pack (show (e::SomeException) ) ] >> clean_from_client c_sock addr2sMV)
 
 	-- Получили список пар "server address" => "server socket" после заполнения, дальше он изментся не будет.
 	addr2s <- readMVar addr2sMV

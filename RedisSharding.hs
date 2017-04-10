@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module RedisSharding (
 	client_reader, servers_reader
+	, printLog
 ) where
 
 
@@ -17,8 +19,30 @@ import qualified Data.List as L
 import qualified Data.ByteString.Char8 as BS
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BSL
+import qualified Data.ByteString.Lazy.Internal as BSLI
 
 import RedisParser
+
+
+import Data.Time.Clock (getCurrentTime)
+#if MIN_VERSION_time(1,5,0)
+import Data.Time.Format (formatTime, defaultTimeLocale)
+#else
+import Data.Time.Format (formatTime)
+import System.Locale (defaultTimeLocale)
+#endif
+
+formatDataTime t =  BSL.pack $ formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" t
+
+
+printLog s = do
+	t <- getCurrentTime
+	BSL.putStrLn $ BSL.concat $ [formatDataTime t, "\t",  BSL.concat s]
+
+
+firstChunk :: BSL.ByteString -> BSL.ByteString
+firstChunk BSLI.Empty = BSL.empty
+firstChunk (BSLI.Chunk f t) = BSL.fromStrict f
 
 
 warn = BS.hPutStrLn stderr . BS.concat . BSL.toChunks . BSL.concat
@@ -111,7 +135,9 @@ client_reader getContents c_send servers s_send set_cmd fquit =
 							c_send ["-ERR unsupported command '", cmd, "'\r\n"]
 					return s
 				Nothing      -> do
+					printLog ["unified protocol error for\r\n", ">>>\r\n", (firstChunk s), "<<<"]
 					c_send ["-ERR unified protocol error\r\n"]
+					fquit
 					getContents
 			client_loop s
 

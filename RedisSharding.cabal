@@ -1,11 +1,11 @@
 Name:          RedisSharding
-Version:       0.8
+Version:       0.9
 Author:        Nick Kostitya
 License:       BSD3
 license-file:  LICENSE
 Build-type:    Simple
 Cabal-version: >=1.2
-Tested-with:   GHC==7.0.3, GHC==7.4.1, GHC==7.6.1
+Tested-with:   GHC==7.0.3, GHC==7.4, GHC==7.6, GHC==7.8, GHC==7.10
 
 Library
   build-depends:
@@ -14,7 +14,8 @@ Library
     unix       >= 2.4,
     network    >= 2.3,
     digest,
-    time
+    time,
+    old-locale
 
 Executable     redis_sharding
   main-is:     redis_sharding.hs
